@@ -1,0 +1,49 @@
+
+  <!DOCTYPE html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Игра Мемори</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="data.js"></script>
+  </head>
+  <body>
+    <div id="root">
+    </div>
+    <script type="text/babel">
+      const container = document.getElementById("root");
+      const root = ReactDOM.createRoot(container);
+      root.render(<App />);
+      function App () {
+        return (<section className="game container">
+      <Cards />
+  </section>)
+      }
+
+    function Cards () {
+      const cards = images.map((item, index)=> {
+        const show=(visibleItems.includes(item.id))?true:false;
+        const finish = (finishedItems.includes(item.id))?true:false;
+        return <Card url={item.url} alter={item.description}
+        isShow={show} isFinished={finish} key={item.id}/>
+      })
+      return (
+        <ul className="cards cards-theme-cars">
+          {cards};
+          </ul>
+      )
+    }
+
+    function Card ({url,alter,isShow=false, isFinished=false},key) {
+      const show = (isShow)?"card-show":'';
+      const finish = (isFinished)?'card-finished':'';
+      return <li className={`card ${show} ${finish}`}>
+          <img src = {url} width="204" height="144" alt={alter} key={key} />
+          </li>
+    }
+    </script>
+  </body>
+</html>
+
