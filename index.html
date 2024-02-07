@@ -1,49 +1,80 @@
-
-  <!DOCTYPE html lang="ru">
+<!DOCTYPE html>
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
     <title>Игра Мемори</title>
     <link rel="stylesheet" href="css/style.css" />
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="vendor/react.development.js"></script>
+    <script src="vendor/react-dom.development.js"></script>
+    <script src="vendor/babel.min.js"></script>
     <script src="data.js"></script>
   </head>
   <body>
-    <div id="root">
-    </div>
+    <div id="root"></div>
     <script type="text/babel">
       const container = document.getElementById("root");
       const root = ReactDOM.createRoot(container);
-      root.render(<App />);
-      function App () {
-        return (<section className="game container">
-      <Cards />
-  </section>)
+      root.render(<App images={images} />);
+
+      function App({ images = [] }) {
+        // TODO: добавьте состояние для счётчика шагов
+        let [steps, setSteps] = React.useState(0);
+        const stepUp = () => {
+          setSteps((before) => before + 1);
+        };
+        return (
+          <section className="game container">
+            <div className="steps">Шаг {steps}</div>
+            <Grid images={images} stepUp={stepUp} />
+          </section>
+        );
       }
 
-    function Cards () {
-      const cards = images.map((item, index)=> {
-        const show=(visibleItems.includes(item.id))?true:false;
-        const finish = (finishedItems.includes(item.id))?true:false;
-        return <Card url={item.url} alter={item.description}
-        isShow={show} isFinished={finish} key={item.id}/>
-      })
-      return (
-        <ul className="cards cards-theme-cars">
-          {cards};
-          </ul>
-      )
-    }
+      function Grid({ images = [], finishedItems = ["YdAqiUkUoWA"], stepUp }) {
+        // TODO: добавьте состояние списка открытых карточек
+        const [visibleItems, setVisible] = React.useState([]);
 
-    function Card ({url,alter,isShow=false, isFinished=false},key) {
-      const show = (isShow)?"card-show":'';
-      const finish = (isFinished)?'card-finished':'';
-      return <li className={`card ${show} ${finish}`}>
-          <img src = {url} width="204" height="144" alt={alter} key={key} />
+        const visibleList = (id) => {
+          // if (visibleItems.includes(id)) {
+          //   setVisible(
+          //     visibleItems.filter((item) => {
+          //       return item !== id;
+          //     })
+          //   );
+          //   return;
+          // }
+          setVisible([...visibleItems, id]);
+          if (!visibleItems.includes(id) && !finishedItems.includes(id)) stepUp();
+        };
+        return (
+          <ul className="cards">
+            {images.map((item, index) => (
+              <Card
+                key={item.id}
+                url={item.url}
+                id={item.id}
+                description={item.description}
+                isVisible={visibleItems.includes(item.id)}
+                isFinished={finishedItems.includes(item.id)}
+                onSelected={visibleList}
+              />
+            ))}
+          </ul>
+        );
+      }
+
+      function Card({ id, url, description, isVisible, isFinished, onSelected }) {
+        // TODO: добавьте обработку события
+        const selected = () => {
+          onSelected(id);
+        };
+        const className = `${isVisible ? "card-show" : ""} ${isFinished ? "card-finished" : ""}`;
+        return (
+          <li className={`card ${className}`} onClick={selected}>
+            <img width="204" height="144" src={url} alt={description} />
           </li>
-    }
+        );
+      }
     </script>
   </body>
 </html>
-
