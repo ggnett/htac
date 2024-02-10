@@ -65,6 +65,8 @@
                 setVisibleItems([]);
               }, TIMEOUT);
               break;
+            default:
+              setVisibleItems([]);
           }
         };
 
@@ -100,7 +102,7 @@
       }
 
       function Header({ stepsCount, finishedItems, images }) {
-        let dl = 16.6666 * (finishedItems.length / 2);
+        let dl = (100 / (images.length / 2)) * (finishedItems.length / 2);
         return (
           <>
             <div className="progress-wrapper">
