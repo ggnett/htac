@@ -21,30 +21,29 @@
       function App({ images = [] }) {
         const [stepsCount, setStepsCount] = React.useState(0);
         const [finishedItems, setFinishedItems] = React.useState([]);
+        let isOver = false;
         // TODO: добавьте состояние для угаданных пар карточек
         const checkItems = (card1 = "", card2 = "") => {
           // TODO: реализуйте сравнение карточек в паре
           let im1 = images.find((item) => item.id == card1);
           let im2 = images.find((item) => item.id == card2);
-          if (im1.url === im2.url)
+          if (im1.url === im2.url) {
             setFinishedItems([...finishedItems, card1, card2]);
+          }
           setStepsCount((i) => i + 1);
         };
+        if (finishedItems.length === images.length) {
+          isOver = true;
+        }
 
         return (
           <section className="game container">
             {/* TODO: отобразите прогресс игры */}
-            <Header
-              stepsCount={stepsCount}
-              finishedItems={finishedItems}
-              images={images}
-            />
-            <Grid
-              images={images}
-              finishedItems={finishedItems}
-              checkItems={checkItems}
-            />
-            {/* TODO% отобразите модальное окно при победе */}
+            <Header stepsCount={stepsCount} finishedItems={finishedItems} images={images} />
+            <Grid images={images} finishedItems={finishedItems} checkItems={checkItems} />
+            {isOver && (
+              <Modal stepsCount={stepsCount} finishedItems={finishedItems} setFinishedItems={setFinishedItems} setStepsCount={setStepsCount} />
+            )}
           </section>
         );
       }
@@ -62,9 +61,10 @@
             case 1:
               setVisibleItems((items) => [...items, id]);
               checkItems(visibleItems[0], id);
+              setTimeout(() => {
+                setVisibleItems([]);
+              }, TIMEOUT);
               break;
-            case 2:
-              setVisibleItems([id]);
           }
         };
 
@@ -85,17 +85,8 @@
         );
       }
 
-      function Card({
-        url,
-        description,
-        id,
-        isVisible,
-        isFinished,
-        onCardClick,
-      }) {
-        const className = `${isVisible ? "card-show" : ""} ${
-          isFinished ? "card-finished" : ""
-        }`;
+      function Card({ url, description, id, isVisible, isFinished, onCardClick }) {
+        const className = `${isVisible ? "card-show" : ""} ${isFinished ? "card-finished" : ""}`;
 
         const handleClick = () => {
           onCardClick(id);
@@ -116,11 +107,29 @@
               <div className="progress" style={{ width: dl + "%" }}></div>
             </div>
             <p className="progress-description">
-              Открыто <span>{finishedItems.length / 2}</span> /{" "}
-              <span>{images.length / 2}</span>
+              Открыто <span>{finishedItems.length / 2}</span> / <span>{images.length / 2}</span>
             </p>
             <div className="steps">Шаг {stepsCount}</div>
           </>
+        );
+      }
+
+      function Modal({ stepsCount, finishedItems, setFinishedItems, setStepsCount }) {
+        function newGame() {
+          setFinishedItems([]);
+          setStepsCount(0);
+        }
+
+        return (
+          <div className="modal">
+            <div className="modal-box">
+              <h3 className="modal-caption">Победа!</h3>
+              <p className="modal-description">Вы собрали все пары за {stepsCount} шагов</p>
+              <button className="button modal-button" type="button" onClick={newGame}>
+                Новая игра
+              </button>
+            </div>
+          </div>
         );
       }
     </script>
