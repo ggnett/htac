@@ -7,6 +7,7 @@
     <script src="vendor/react.development.js"></script>
     <script src="vendor/react-dom.development.js"></script>
     <script src="vendor/babel.min.js"></script>
+    <script src="vendor/get-declension.min.umd.js"></script>
     <script src="data.js"></script>
     <script src="settings.js"></script>
   </head>
@@ -15,23 +16,40 @@
     <script type="text/babel">
       const container = document.getElementById("root");
       const root = ReactDOM.createRoot(container);
-      root.render(<App images={images} results={results} />);
+      root.render(<App getImages={getImages} results={results} />);
 
-      function App({ images = [], results = [] }) {
-        // TODO: добавьте состояние для хранения текущего результата
-        // TODO: добавьте состояние для хранения страницы приложения
-        // TODO: добавьте логику переключения страницы приложения
-        const [page, setPage] = React.useState("game");
-        const [stepsCount, setStepsCount] = React.useState(0);
-        return (
-          <>
-            {page === "game" && <GamePage images={images} setPage={setPage} stepsCount={stepsCount} setStepsCount={setStepsCount} />}
-            {page === "result" && <ResultsPage result={results} setPage={setPage} stepsCount={stepsCount} setStepsCount={setStepsCount} />}
-          </>
-        );
+      function App({ results, getImages }) {
+        const [page, setPage] = React.useState(AppRoute.Initial);
+        const [result, setResult] = React.useState(0);
+        // TODO: добавьте состояние текущего набора карточек
+        const [images, setImages] = React.useState(getImages(cats));
+        const [deck, setDeck] = React.useState();
+        const showResults = (stepsCount) => {
+          setResult(stepsCount);
+          setPage(AppRoute.Results);
+        };
+        const handleReset = () => {
+          setPage(AppRoute.Initial);
+        };
+        const getPage = (route) => {
+          switch (route) {
+            case AppRoute.Initial:
+              return <InitialPage setImages={setImages} getImages={getImages} setPage={setPage} setDeck={setDeck} />;
+            case AppRoute.Game:
+              return <GamePage images={images} onShowResults={showResults} deck={deck} />;
+            case AppRoute.Results:
+              return <ResultsPage stepsCount={result} onResetGame={handleReset} results={results} />;
+            default:
+              return null;
+          }
+        };
+        return getPage(page);
       }
-      const useGame = (images, stepsCount, setStepsCount) => {
+
+      const useGame = (images) => {
         const [finishedItems, setFinishedItems] = React.useState([]);
+        const [stepsCount, setStepsCount] = React.useState(0);
+
         const checkItems = (firstItem, secondItem) => {
           const firstImage = images.find(({ id }) => id === firstItem);
           const secondImage = images.find(({ id }) => id === secondItem);
@@ -51,19 +69,18 @@
         };
       };
 
-      function GamePage({ images = [], setPage, stepsCount = { stepsCount }, setStepsCount = { setStepsCount } }) {
-        const { finishedItems, checkItems, isWin } = useGame(images, stepsCount, setStepsCount);
+      function GamePage({ images = [], onShowResults, deck }) {
+        const { finishedItems, stepsCount, checkItems, isWin } = useGame(images);
 
         const handleResultsClick = () => {
-          // TODO: передайте сообщение родительскому компоненту
-          setPage("result");
+          onShowResults(stepsCount);
         };
 
         return (
           <section className="game container">
             <Progress value={finishedItems.length / 2} max={images.length / 2} />
             <div className="steps">Шаг {stepsCount}</div>
-            <Grid images={images} finishedItems={finishedItems} checkItems={checkItems} />
+            <Grid images={images} finishedItems={finishedItems} checkItems={checkItems} deck={deck} />
             {isWin && (
               <Modal>
                 <h3 className="modal-caption">Победа!</h3>
@@ -98,7 +115,7 @@
         );
       }
 
-      function Grid({ images = [], finishedItems, checkItems }) {
+      function Grid({ images = [], finishedItems, checkItems, deck }) {
         const [visibleItems, setVisibleItems] = React.useState([]);
 
         const handleCardClick = (id) => {
@@ -121,9 +138,20 @@
               setVisibleItems([]);
           }
         };
-
+        let rubash;
+        switch (deck) {
+          case "cats":
+            rubash = "";
+            break;
+          case "flowers":
+            rubash = "cards-theme-flowers";
+            break;
+          case "cars":
+            rubash = "cards-theme-cars";
+        }
         return (
-          <ul className="cards">
+          // TODO: добавьте класс списку для смены рубашки карточек
+          <ul className={`cards ${rubash}`}>
             {images.map((item) => (
               <Card
                 key={item.id}
@@ -152,44 +180,85 @@
         );
       }
 
-      function ResultsPage({ result = [], setPage, stepsCount, setStepsCount }) {
-        function onClickHundler() {
-          setPage("game");
-          setStepsCount(0);
-        }
+      function ResultsPage({ stepsCount, results, onResetGame }) {
+        // TODO: примените getDeclension для правильного склонения числа шагов
+        const wordsDeclension = getDeclension({ count: stepsCount, one: "шаг", few: "шага", many: "шагов" });
         return (
           <section className="result container">
             <h2>Лучшие результаты:</h2>
             <p>
-              Вы завершили игру за <b>{stepsCount} шагов</b>, так держать!
+              Вы завершили игру за <b>{wordsDeclension}</b>, так держать!
             </p>
-            <table className="result-table">
-              <thead>
-                <tr className="result-table-row">
-                  <th>Место</th>
-                  <th>Имя</th>
-                  <th>Шаги</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...result, { name: "Ваш результат", stepsCount: stepsCount }]
-                  .sort((i1, i2) => {
-                    return i1.stepsCount - i2.stepsCount;
-                  })
-                  .map((item, index) => {
-                    return (
-                      <tr key={index} className={`result-table-row ${item.name == "Ваш результат" && "active"}`}>
-                        <td>{index + 1}</td>
-                        <td>{item.name}</td>
-                        <td>{item.stepsCount}</td>
-                      </tr>
-                    );
-                  })}
-              </tbody>
-            </table>
+            <ResultsTable current={stepsCount} results={results} />
             <p>Хотите попробовать ещё раз?</p>
-            <button className="button result-button" type="button" onClick={onClickHundler}>
+            <button onClick={onResetGame} className="button result-button" type="button">
               Новая игра
+            </button>
+          </section>
+        );
+      }
+
+      function ResultsTable({ current, results }) {
+        const sortedResults = [...results, { name: "Ваш результат", stepsCount: current }].sort((a, b) => a.stepsCount - b.stepsCount);
+        return (
+          <table className="result-table">
+            <thead>
+              <tr className="result-table-row">
+                <th>Место</th>
+                <th>Имя</th>
+                <th>Шаги</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedResults.map(({ name, stepsCount }, i) => (
+                <tr key={name} className={`result-table-row ${stepsCount === current ? "active" : ""}`}>
+                  <td>{i + 1}</td>
+                  <td>{name}</td>
+                  <td>{stepsCount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        );
+      }
+
+      function InitialPage({ setImages, getImages, setPage, setDeck }) {
+        function deckHundler1() {
+          setImages(getImages(cats));
+          setPage(AppRoute.Game);
+          setDeck("cats");
+        }
+        function deckHundler2() {
+          setImages(getImages(flowers));
+          setPage(AppRoute.Game);
+          setDeck("flowers");
+        }
+        function deckHundler3() {
+          setImages(getImages(cars));
+          setPage(AppRoute.Game);
+          setDeck("cars");
+        }
+        return (
+          <section className="rules container">
+            {/* TODO: отрисуйте начальную страницу из шаблона */}
+            <h2>Добро пожаловать!</h2>
+            <p>Memory — игра для тренировки визуальной памяти</p>
+            <div className="rules-panel">
+              <h3>Правила игры</h3>
+              <ul className="rules-list">
+                <li>В наборе есть множество карточек – по две штуки с одним и тем же рисунком.</li>
+                <li>Нужно разложить карточки «рубашкой» вверх на столе, а затем переворачивать по две.</li>
+                <li>Если они совпадают – игрок забирает их и получает ещё один ход.</li>
+              </ul>
+            </div>
+            <button className="ico-button ico-button-cats" type="button" onClick={deckHundler1}>
+              Котики
+            </button>
+            <button className="ico-button ico-button-flowers" type="button" onClick={deckHundler2}>
+              Цветочки
+            </button>
+            <button className="ico-button ico-button-cars" type="button" onClick={deckHundler3}>
+              Машины
             </button>
           </section>
         );
